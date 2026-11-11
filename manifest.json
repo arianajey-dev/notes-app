@@ -1,0 +1,46 @@
+{
+  "id": "./",
+  "name": "CatatanKu",
+  "short_name": "CatatanKu",
+  "description": "Aplikasi catatan sederhana untuk menyimpan ide, tugas, dan catatan harian. Bisa digunakan secara offline.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#FFFAF0",
+  "theme_color": "#F59E0B",
+  "categories": ["productivity", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Catatan baru",
+      "short_name": "Baru",
+      "description": "Langsung membuka form catatan baru",
+      "url": "./?action=new",
+      "icons": [
+        {
+          "src": "./icon.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#F59E0B" />
+  <meta name="description" content="CatatanKu - aplikasi catatan sederhana, cepat, dan bisa digunakan secara offline. Semua catatan tersimpan di perangkatmu." />
+  <title>CatatanKu — Catatan harian</title>
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="CatatanKu" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { cream: '#FFFAF0' },
+          boxShadow: {
+            float: '0 22px 45px -18px rgba(180, 83, 9, 0.55)',
+            panel: '0 24px 70px -30px rgba(120, 53, 15, 0.45)'
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    :root { color-scheme: light; }
+    * { -webkit-tap-highlight-color: transparent; }
+    html { -webkit-text-size-adjust: 100%; scroll-padding-top: 1rem; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #FFFAF0;
+      background-image:
+        radial-gradient(circle at 100% 0%, rgba(251, 191, 36, 0.14), transparent 30rem),
+        radial-gradient(circle at 0% 100%, rgba(251, 146, 60, 0.08), transparent 26rem);
+    }
+
+    @supports (font-family: ui-rounded) {
+      body { font-family: ui-rounded, "Segoe UI", system-ui, -apple-system, sans-serif; }
+    }
+
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+    .category-chip {
+      display: inline-flex;
+      flex-shrink: 0;
+      align-items: center;
+      gap: 0.4rem;
+      border: 1px solid #FDE7C2;
+      min-height: 2.25rem;
+      border-radius: 9999px;
+      background: #FFF8EC;
+      padding: 0.5rem 0.85rem;
+      color: #92400E;
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1;
+      transition: transform 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+    .category-chip:hover { background: #FFF1D6; }
+    .category-chip:active { transform: scale(0.97); }
+    .category-chip[aria-pressed="true"] {
+      border-color: #B45309;
+      background: #B45309;
+      color: #fff;
+      box-shadow: 0 7px 16px -8px rgba(180, 83, 9, 0.75);
+    }
+    .chip-count {
+      display: inline-grid;
+      min-width: 1.25rem;
+      height: 1.25rem;
+      place-items: center;
+      border-radius: 9999px;
+      background: rgba(146, 64, 14, 0.09);
+      padding: 0 0.3rem;
+      font-size: 0.64rem;
+      font-weight: 800;
+    }
+    .category-chip[aria-pressed="true"] .chip-count { background: rgba(255, 255, 255, 0.24); color: #fff; }
+
+    .note-card {
+      background: var(--note-bg);
+      border-color: var(--note-border);
+      box-shadow: 0 16px 34px -28px rgba(68, 64, 60, 0.55);
+      transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+    @media (hover: hover) {
+      .note-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 22px 38px -24px rgba(68, 64, 60, 0.42);
+      }
+    }
+    .note-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      border: 1px solid color-mix(in srgb, var(--note-accent) 18%, transparent);
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.68);
+      padding: 0.25rem 0.55rem;
+      color: var(--note-accent);
+      font-size: 0.66rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .note-content {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 6;
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
+    .note-title-clamp {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow-wrap: anywhere;
+    }
+
+    .color-option {
+      border: 2px solid transparent;
+      transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    }
+    .color-option:has(input:checked) {
+      transform: translateY(-2px) scale(1.04);
+      border-color: #292524 !important;
+      box-shadow: 0 5px 12px -5px rgba(41, 37, 36, 0.55);
+    }
+    .color-option:focus-within { outline: 3px solid #FCD34D; outline-offset: 2px; }
+
+    body.modal-open { overflow: hidden; }
+
+    .sheet-dialog {
+      width: 100%;
+      max-width: 34rem;
+      max-height: calc(100dvh - 0.5rem);
+      margin: auto auto 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      overflow: visible;
+    }
+    .sheet-dialog::backdrop {
+      background: rgba(41, 37, 36, 0.52);
+      backdrop-filter: blur(4px);
+    }
+    .sheet-dialog[open] .sheet-panel { animation: sheet-in 260ms cubic-bezier(0.2, 0.9, 0.3, 1); }
+    @keyframes sheet-in {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .confirm-dialog {
+      width: calc(100% - 2rem);
+      max-width: 24rem;
+      margin: auto;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .confirm-dialog::backdrop {
+      background: rgba(41, 37, 36, 0.52);
+      backdrop-filter: blur(4px);
+    }
+    .confirm-dialog[open] .confirm-panel { animation: pop-in 200ms ease-out; }
+    @keyframes pop-in {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @media (min-width: 640px) {
+      .sheet-dialog { margin: auto; }
+      .sheet-dialog[open] .sheet-panel { animation: pop-in 220ms ease-out; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-full text-stone-800 antialiased">
+  <a href="#notesSection" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80] focus:rounded-xl focus:bg-stone-900 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">Lewati ke daftar catatan</a>
+
+  <div class="flex min-h-[100dvh] flex-col">
+    <header class="relative overflow-hidden bg-gradient-to-br from-amber-300 via-amber-400 to-orange-400 px-4 pb-24 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:px-6">
+      <div aria-hidden="true" class="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/15 blur-2xl"></div>
+      <div aria-hidden="true" class="pointer-events-none absolute -bottom-28 -left-16 h-64 w-64 rounded-full bg-orange-200/25 blur-2xl"></div>
+      <div aria-hidden="true" class="pointer-events-none absolute left-1/2 top-5 h-24 w-24 rounded-full border-[18px] border-white/[0.06]"></div>
+
+      <div class="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-3">
+          <img src="./icon.svg" alt="" width="48" height="48" class="h-12 w-12 shrink-0 rounded-2xl bg-white/95 p-0.5 shadow-lg ring-1 ring-white/50" />
+          <div class="min-w-0">
+            <p class="text-[10px] font-extrabold uppercase tracking-[0.22em] text-amber-950">Catatan harian</p>
+            <h1 class="truncate text-2xl font-black tracking-tight text-amber-950">CatatanKu</h1>
+          </div>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-2">
+          <div id="connectionStatus" role="status" title="Status koneksi" class="flex h-9 items-center gap-1.5 rounded-full border border-amber-950/10 bg-white/45 px-2.5 text-[11px] font-extrabold text-amber-950 backdrop-blur-sm">
+            <span id="connectionDot" class="h-1.5 w-1.5 rounded-full bg-emerald-600 shadow-[0_0_0_3px_rgba(5,150,105,0.15)]"></span>
+            <span id="connectionLabel" class="hidden sm:inline">Online</span>
+          </div>
+          <button id="installBtn" type="button" class="hidden h-9 items-center gap-1.5 rounded-full border border-amber-950/10 bg-white/55 px-3 text-[11px] font-extrabold text-amber-950 shadow-sm backdrop-blur-sm transition hover:bg-white/75 active:scale-95">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v11m0 0 4-4m-4 4-4-4M5 18.5h14" />
+            </svg>
+            <span>Pasang</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="relative mx-auto mt-8 max-w-6xl">
+        <p class="max-w-md text-sm font-semibold leading-relaxed text-amber-950">Simpan ide, tugas, dan hal-hal kecil yang berarti — semuanya di satu tempat.</p>
+      </div>
+    </header>
+
+    <main class="relative z-10 mx-auto -mt-16 w-full max-w-6xl flex-1 px-4 pb-28 sm:px-6">
+      <section aria-label="Cari dan filter catatan" class="rounded-[1.75rem] border border-amber-100/90 bg-white p-3 shadow-[0_22px_55px_-30px_rgba(120,53,15,0.42)] sm:p-4">
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" />
+          </svg>
+          <label for="searchInput" class="sr-only">Cari catatan</label>
+          <input id="searchInput" type="search" inputmode="search" autocomplete="off" placeholder="Cari judul atau isi catatan..."
+            class="h-12 w-full rounded-2xl border border-stone-200 bg-stone-50/80 pl-12 pr-12 text-[15px] font-medium text-stone-800 outline-none transition placeholder:font-normal placeholder:text-stone-500 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" />
+          <button id="clearSearch" type="button" class="absolute right-2 top-1/2 hidden h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-stone-200/80 text-stone-500 transition hover:bg-stone-300 hover:text-stone-700" aria-label="Hapus pencarian">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <path stroke-linecap="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div id="categoryChips" class="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-0.5" role="group" aria-label="Filter kategori"></div>
+      </section>
+
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h2 id="sectionTitle" class="text-lg font-extrabold tracking-tight text-stone-800">Semua catatan</h2>
+            <span id="noteCountBadge" class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-extrabold text-amber-800">0</span>
+          </div>
+          <p id="noteSummary" class="mt-0.5 text-xs font-medium text-stone-500" aria-live="polite">Belum ada catatan tersimpan</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="backupBtn" type="button" class="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 text-xs font-bold text-stone-600 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800 active:scale-95 sm:flex-none">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+            </svg>
+            <span>Backup</span>
+          </button>
+          <button id="restoreBtn" type="button" class="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 text-xs font-bold text-stone-600 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800 active:scale-95 sm:flex-none">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16V4m0 0 4 4m-4-4L8 8M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+            </svg>
+            <span>Restore</span>
+          </button>
+          <input id="restoreInput" type="file" accept=".json,application/json" class="hidden" />
+        </div>
+      </div>
+
+      <section id="notesSection" class="mt-4" aria-label="Daftar catatan">
+        <div id="notesGrid" class="columns-1 gap-4 sm:columns-2 lg:columns-3"></div>
+
+        <div id="emptyState" class="hidden rounded-[1.75rem] border-2 border-dashed border-amber-200 bg-amber-50/60 px-6 py-14 text-center">
+          <div class="mx-auto grid h-20 w-20 place-items-center rounded-[1.5rem] bg-white text-amber-500 shadow-sm ring-1 ring-amber-100">
+            <svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 3.75h7.5L19.5 8.7v11.55H7V3.75Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.5 3.75V8.7h5M10 12.25h5.5M10 15.75h4" />
+            </svg>
+          </div>
+          <h3 id="emptyTitle" class="mt-5 text-lg font-extrabold text-stone-800">Belum ada catatan</h3>
+          <p id="emptyText" class="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-stone-500">Ketuk tombol + di bawah untuk mulai menulis catatan pertamamu.</p>
+          <button id="emptyAction" type="button" class="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-amber-700 px-5 text-sm font-extrabold text-white shadow-[0_12px_22px_-12px_rgba(180,83,9,0.9)] transition hover:bg-amber-800 active:scale-95">Tulis catatan pertama</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="mx-auto mt-auto w-full max-w-6xl px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2 text-center text-[11px] font-medium text-stone-500 sm:px-6">
+      <p>CatatanKu · Data tersimpan di perangkat ini</p>
+    </footer>
+  </div>
+  <div class="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 px-4 sm:px-6">
+    <div class="mx-auto flex max-w-6xl justify-end">
+      <button id="addNoteBtn" type="button" aria-label="Tambah catatan baru"
+        class="pointer-events-auto group relative flex h-16 w-16 items-center justify-center gap-2 rounded-[1.35rem] bg-gradient-to-br from-amber-700 to-orange-700 text-white shadow-float ring-1 ring-inset ring-white/30 transition hover:-translate-y-0.5 hover:from-amber-800 hover:to-orange-800 hover:shadow-[0_28px_55px_-18px_rgba(180,83,9,0.65)] active:scale-95 sm:w-auto sm:px-6">
+        <svg class="h-8 w-8 sm:h-6 sm:w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+          <path stroke-linecap="round" d="M12 5v14M5 12h14" />
+        </svg>
+        <span class="hidden text-sm font-extrabold sm:inline">Catatan baru</span>
+      </button>
+    </div>
+  </div>
+
+  <dialog id="noteDialog" class="sheet-dialog" aria-labelledby="noteDialogTitle">
+    <form id="noteForm" class="sheet-panel flex max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-[#FFFCF7] shadow-panel sm:rounded-[1.75rem]">
+      <div class="flex items-start justify-between gap-4 border-b border-amber-100/80 px-5 pb-4 pt-4">
+        <div>
+          <p id="formEyebrow" class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-600">Catatan baru</p>
+          <h2 id="noteDialogTitle" class="mt-0.5 text-xl font-black tracking-tight text-stone-800">Tulis catatan</h2>
+        </div>
+        <button id="closeNoteDialog" type="button" class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-stone-100 text-stone-500 transition hover:bg-stone-200 hover:text-stone-700" aria-label="Tutup form catatan">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+        <input id="noteId" type="hidden" />
+        <p id="formError" class="mb-4 hidden rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold leading-relaxed text-rose-700" role="alert"></p>
+        <div>
+          <label for="noteTitle" class="text-sm font-extrabold text-stone-700">Judul <span class="text-rose-500">*</span></label>
+          <input id="noteTitle" type="text" required maxlength="120" autocomplete="off" placeholder="Contoh: Rencana belajar minggu ini"
+            class="mt-1.5 h-12 w-full rounded-xl border border-stone-200 bg-white px-3.5 text-[15px] font-semibold text-stone-800 outline-none transition placeholder:font-normal placeholder:text-stone-500 focus:border-amber-400 focus:ring-4 focus:ring-amber-100" />
+        </div>
+
+        <div class="mt-4">
+          <div class="flex items-center justify-between gap-2">
+            <label for="noteCategory" class="text-sm font-extrabold text-stone-700">Kategori</label>
+            <span class="text-[10px] font-semibold text-stone-500">Pilih atau tambah baru</span>
+          </div>
+          <select id="noteCategory" class="mt-1.5 h-12 w-full appearance-none rounded-xl border border-stone-200 bg-white px-3.5 pr-10 text-[15px] font-semibold text-stone-700 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100"></select>
+          <div id="newCategoryWrap" class="mt-2 hidden">
+            <div class="flex items-center gap-2">
+              <label for="newCategoryInput" class="sr-only">Nama kategori baru</label>
+              <input id="newCategoryInput" type="text" maxlength="24" autocomplete="off" placeholder="Nama kategori baru..."
+                class="h-10 min-w-0 flex-1 rounded-xl border border-amber-200 bg-amber-50/60 px-3 text-sm font-semibold text-stone-700 outline-none transition placeholder:font-normal placeholder:text-stone-500 focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-100" />
+              <button id="saveNewCategoryBtn" type="button" class="h-10 rounded-xl bg-amber-700 px-3 text-xs font-extrabold text-white transition hover:bg-amber-800 active:scale-95">Tambah</button>
+              <button id="cancelNewCategoryBtn" type="button" class="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-stone-200 bg-white text-stone-500 transition hover:bg-stone-50" aria-label="Batal menambah kategori">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M6 18 18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <p id="newCategoryHint" class="mt-1.5 hidden text-xs font-bold text-rose-600" role="alert"></p>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <div class="flex items-center justify-between gap-2">
+            <label for="noteContent" class="text-sm font-extrabold text-stone-700">Isi catatan</label>
+            <span id="contentCount" class="text-[10px] font-semibold tabular-nums text-stone-500">0/5000</span>
+          </div>
+          <textarea id="noteContent" rows="6" maxlength="5000" placeholder="Tulis apa yang ada di pikiranmu..."
+            class="mt-1.5 w-full resize-none rounded-xl border border-stone-200 bg-white px-3.5 py-3 text-[15px] leading-relaxed text-stone-800 outline-none transition placeholder:text-stone-500 focus:border-amber-400 focus:ring-4 focus:ring-amber-100"></textarea>
+        </div>
+
+        <fieldset class="mt-5">
+          <legend class="text-sm font-extrabold text-stone-700">Warna latar</legend>
+          <div class="mt-2 grid grid-cols-6 gap-2.5">
+            <label class="color-option grid h-11 w-full place-items-center rounded-xl border-2" style="background:#FFF3D6;border-color:#F2D18B" title="Amber">
+              <input type="radio" name="noteColor" value="amber" class="peer sr-only" aria-label="Warna amber" checked />
+              <svg class="h-5 w-5 text-amber-900 opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            </label>
+            <label class="color-option grid h-11 w-full place-items-center rounded-xl border-2" style="background:#FFE9E7;border-color:#FBC7C2" title="Merah muda">
+              <input type="radio" name="noteColor" value="rose" class="peer sr-only" aria-label="Warna merah muda" />
+              <svg class="h-5 w-5 text-rose-900 opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            </label>
+            <label class="color-option grid h-11 w-full place-items-center rounded-xl border-2" style="background:#EAF5E9;border-color:#C4E3C0" title="Hijau sage">
+              <input type="radio" name="noteColor" value="sage" class="peer sr-only" aria-label="Warna hijau sage" />
+              <svg class="h-5 w-5 text-emerald-900 opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            </label>
+            <label class="color-option grid h-11 w-full place-items-center rounded-xl border-2" style="background:#E8F3FF;border-color:#C5DEF8" title="Biru langit">
+              <input type="radio" name="noteColor" value="sky" class="peer sr-only" aria-label="Warna biru langit" />
+              <svg class="h-5 w-5 text-blue-900 opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            </label>
+            <label class="color-option grid h-11 w-full place-items-center rounded-xl border-2" style="background:#F2ECFF;border-color:#D8C8F7" title="Ungu lilac">
+              <input type="radio" name="noteColor" value="lilac" class="peer sr-only" aria-label="Warna ungu lilac" />
+              <svg class="h-5 w-5 text-violet-900 opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            </label>
+            <label class="color-option grid h-11 w-full place-items-center rounded-xl border-2" style="background:#F4F1EA;border-color:#DED6C7" title="Netral">
+              <input type="radio" name="noteColor" value="sand" class="peer sr-only" aria-label="Warna netral" />
+              <svg class="h-5 w-5 text-stone-800 opacity-0 peer-checked:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" /></svg>
+            </label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="flex items-center gap-2 border-t border-amber-100 bg-[#FFFCF7] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 sm:pb-4">
+        <button id="cancelNoteBtn" type="button" class="h-12 rounded-xl border border-stone-200 bg-white px-4 text-sm font-extrabold text-stone-600 transition hover:bg-stone-50 active:scale-95">Batal</button>
+        <button id="saveNoteBtn" type="submit" class="h-12 flex-1 rounded-xl bg-gradient-to-br from-amber-700 to-orange-700 px-5 text-sm font-extrabold text-white shadow-[0_12px_22px_-12px_rgba(180,83,9,0.9)] transition hover:from-amber-800 hover:to-orange-800 active:scale-[0.98]">Simpan catatan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmTitle">
+    <div class="confirm-panel w-full overflow-hidden rounded-[1.6rem] bg-white p-5 shadow-2xl">
+      <div id="confirmIcon" class="grid h-12 w-12 place-items-center rounded-2xl bg-rose-100 text-rose-600">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.5h.008v.008H12v-.008ZM10.3 3.38 2.7 16.13a2 2 0 0 0 1.73 3h15.14a2 2 0 0 0 1.73-3L13.7 3.38a1.97 1.97 0 0 0-3.4 0Z" />
+        </svg>
+      </div>
+      <h2 id="confirmTitle" class="mt-4 text-xl font-black tracking-tight text-stone-800">Hapus catatan?</h2>
+      <p id="confirmMessage" class="mt-1.5 text-sm leading-relaxed text-stone-500"></p>
+      <div class="mt-5 flex gap-2">
+        <button id="confirmCancel" type="button" class="h-11 flex-1 rounded-xl border border-stone-200 bg-white text-sm font-extrabold text-stone-600 transition hover:bg-stone-50 active:scale-95">Batal</button>
+        <button id="confirmAction" type="button" class="h-11 flex-1 rounded-xl bg-rose-600 text-sm font-extrabold text-white shadow-sm transition hover:bg-rose-700 active:scale-95">Hapus</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite" class="pointer-events-none fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-[60] flex translate-y-2 justify-center px-4 opacity-0 transition duration-300">
+    <div id="toastBox" class="flex max-w-md items-center gap-2 rounded-full bg-stone-900/95 px-4 py-2.5 text-sm font-semibold text-white shadow-xl backdrop-blur">
+      <svg id="toastIcon" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5" />
+      </svg>
+      <span id="toastMessage"></span>
+    </div>
+  </div>
+  <script>
+    (() => {
+      'use strict';
+
+      const STORAGE_KEY = 'catatanku.data.v1';
+      const APP_VERSION = 1;
+      const DEFAULT_CATEGORIES = ['Pribadi', 'Kerja', 'Ide'];
+      const CATEGORY_ICONS = { Pribadi: '🌿', Kerja: '💼', Ide: '💡' };
+      const RETIRED_CATEGORIES = ['kuliah'];
+      const COLORS = {
+        amber: { bg: '#FFF3D6', border: '#F2D18B', accent: '#A16207' },
+        rose:  { bg: '#FFE9E7', border: '#FBC7C2', accent: '#BE123C' },
+        sage:  { bg: '#EAF5E9', border: '#C4E3C0', accent: '#15803D' },
+        sky:   { bg: '#E8F3FF', border: '#C5DEF8', accent: '#1D4ED8' },
+        lilac: { bg: '#F2ECFF', border: '#D8C8F7', accent: '#6D28D9' },
+        sand:  { bg: '#F4F1EA', border: '#DED6C7', accent: '#57534E' }
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const searchInput = $('searchInput');
+      const clearSearch = $('clearSearch');
+      const categoryChips = $('categoryChips');
+      const sectionTitle = $('sectionTitle');
+      const noteCountBadge = $('noteCountBadge');
+      const noteSummary = $('noteSummary');
+      const notesGrid = $('notesGrid');
+      const emptyState = $('emptyState');
+      const emptyTitle = $('emptyTitle');
+      const emptyText = $('emptyText');
+      const emptyAction = $('emptyAction');
+      const addNoteBtn = $('addNoteBtn');
+      const noteDialog = $('noteDialog');
+      const noteForm = $('noteForm');
+      const noteIdInput = $('noteId');
+      const formError = $('formError');
+      const noteTitle = $('noteTitle');
+      const noteCategory = $('noteCategory');
+      const newCategoryWrap = $('newCategoryWrap');
+      const newCategoryInput = $('newCategoryInput');
+      const saveNewCategoryBtn = $('saveNewCategoryBtn');
+      const cancelNewCategoryBtn = $('cancelNewCategoryBtn');
+      const newCategoryHint = $('newCategoryHint');
+      const noteContent = $('noteContent');
+      const contentCount = $('contentCount');
+      const formEyebrow = $('formEyebrow');
+      const noteDialogTitle = $('noteDialogTitle');
+      const saveNoteBtn = $('saveNoteBtn');
+      const closeNoteDialog = $('closeNoteDialog');
+      const cancelNoteBtn = $('cancelNoteBtn');
+      const confirmDialog = $('confirmDialog');
+      const confirmIcon = $('confirmIcon');
+      const confirmTitle = $('confirmTitle');
+      const confirmMessage = $('confirmMessage');
+      const confirmCancel = $('confirmCancel');
+      const confirmAction = $('confirmAction');
+      const backupBtn = $('backupBtn');
+      const restoreBtn = $('restoreBtn');
+      const restoreInput = $('restoreInput');
+      const installBtn = $('installBtn');
+      const connectionStatus = $('connectionStatus');
+      const connectionDot = $('connectionDot');
+      const connectionLabel = $('connectionLabel');
+      const toast = $('toast');
+      const toastBox = $('toastBox');
+      const toastMessage = $('toastMessage');
+
+      const state = {
+        category: 'all',
+        query: '',
+        editingId: null,
+        pendingConfirm: null
+      };
+
+      let data = loadData();
+      let toastTimer = null;
+      let deferredInstallPrompt = null;
+
+      const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[char]));
+
+      function normalizeCategory(value) {
+        if (typeof value !== 'string') return '';
+        const clean = value.trim().replace(/\s+/g, ' ').slice(0, 24);
+        return clean === '__add__' ? '' : clean;
+      }
+
+      function generateId() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+          return window.crypto.randomUUID();
+        }
+        return `note-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function toValidDate(value, fallback) {
+        const date = new Date(value);
+        return Number.isFinite(date.getTime()) ? date.toISOString() : fallback;
+      }
+
+      function normalizeData(input) {
+        const source = input && typeof input === 'object' ? input : {};
+        const rawNotes = Array.isArray(source.notes) ? source.notes : (Array.isArray(input) ? input : null);
+        if (!rawNotes) throw new Error('Format backup tidak memiliki daftar catatan.');
+
+        const categories = [];
+        const addCategory = (value) => {
+          const category = normalizeCategory(value);
+          if (!category) return;
+          if (RETIRED_CATEGORIES.includes(category.toLowerCase())) return;
+          if (!categories.some((item) => item.toLowerCase() === category.toLowerCase())) {
+            categories.push(category);
+          }
+        };
+
+        DEFAULT_CATEGORIES.forEach(addCategory);
+        if (Array.isArray(source.categories)) source.categories.forEach(addCategory);
+
+        const now = new Date().toISOString();
+        const notes = rawNotes.map((raw) => {
+          if (!raw || typeof raw !== 'object') return null;
+          const title = typeof raw.title === 'string' ? raw.title.trim().slice(0, 120) : '';
+          const content = typeof raw.content === 'string' ? raw.content.slice(0, 5000) : '';
+          if (!title && !content) return null;
+
+          let category = normalizeCategory(raw.category);
+          if (RETIRED_CATEGORIES.includes(category.toLowerCase())) category = '';
+          if (category) addCategory(category);
+
+          const color = typeof raw.color === 'string' && COLORS[raw.color] ? raw.color : 'amber';
+          const createdAt = toValidDate(raw.createdAt, now);
+          const updatedAt = toValidDate(raw.updatedAt, createdAt);
+          const id = typeof raw.id === 'string' && raw.id.trim()
+            ? raw.id.trim().slice(0, 100)
+            : generateId();
+
+          return {
+            id,
+            title: title || 'Tanpa judul',
+            content,
+            category,
+            color,
+            createdAt,
+            updatedAt
+          };
+        }).filter(Boolean);
+
+        const usedIds = new Set();
+        notes.forEach((note) => {
+          while (usedIds.has(note.id)) note.id = generateId();
+          usedIds.add(note.id);
+        });
+
+        return { notes, categories };
+      }
+
+      function loadData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return { notes: [], categories: [...DEFAULT_CATEGORIES] };
+          const parsed = JSON.parse(raw);
+          const normalized = normalizeData(parsed);
+
+          const usesRetired = (Array.isArray(parsed.categories) && parsed.categories.some(
+            (category) => RETIRED_CATEGORIES.includes(normalizeCategory(category).toLowerCase())
+          )) || (Array.isArray(parsed.notes) && parsed.notes.some(
+            (note) => note && RETIRED_CATEGORIES.includes(normalizeCategory(note.category).toLowerCase())
+          ));
+
+          if (usesRetired) {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                version: APP_VERSION,
+                notes: normalized.notes,
+                categories: normalized.categories,
+                savedAt: new Date().toISOString()
+              }));
+            } catch (error) {
+              // Data tetap tampil benar walau migrasi gagal disimpan.
+            }
+          }
+
+          return normalized;
+        } catch (error) {
+          console.warn('CatatanKu: data lokal tidak dapat dibaca.', error);
+          return { notes: [], categories: [...DEFAULT_CATEGORIES] };
+        }
+      }
+
+      function persist() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            version: APP_VERSION,
+            notes: data.notes,
+            categories: data.categories,
+            savedAt: new Date().toISOString()
+          }));
+          return true;
+        } catch (error) {
+          console.error('CatatanKu: gagal menyimpan data.', error);
+          showToast('Penyimpanan penuh atau tidak tersedia. Catatan belum tersimpan.', 'error');
+          return false;
+        }
+      }
+
+      function formatRelative(iso) {
+        const date = new Date(iso);
+        const diff = Date.now() - date.getTime();
+        if (!Number.isFinite(diff) || diff < 60000) return 'Baru saja';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)} menit lalu`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)} jam lalu`;
+        if (diff < 604800000) return `${Math.floor(diff / 86400000)} hari lalu`;
+        return new Intl.DateTimeFormat('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          ...(date.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {})
+        }).format(date);
+      }
+
+      function formatFullDate(iso) {
+        const date = new Date(iso);
+        if (!Number.isFinite(date.getTime())) return '';
+        return new Intl.DateTimeFormat('id-ID', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        }).format(date);
+      }
+
+      function categoryEmoji(category) {
+        return CATEGORY_ICONS[category] || '📌';
+      }
+
+      function getVisibleNotes() {
+        const query = state.query.toLocaleLowerCase('id-ID');
+        return data.notes
+          .filter((note) => state.category === 'all' || note.category === state.category)
+          .filter((note) => {
+            if (!query) return true;
+            return note.title.toLocaleLowerCase('id-ID').includes(query)
+              || note.content.toLocaleLowerCase('id-ID').includes(query);
+          })
+          .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      }
+      function renderCategoryChips() {
+        const counts = {};
+        data.categories.forEach((category) => { counts[category] = 0; });
+        data.notes.forEach((note) => {
+          if (note.category && Object.prototype.hasOwnProperty.call(counts, note.category)) {
+            counts[note.category] += 1;
+          }
+        });
+
+        const chips = [
+          { key: 'all', label: 'Semua', icon: '🗂️', count: data.notes.length },
+          ...data.categories.map((category) => ({
+            key: category,
+            label: category,
+            icon: categoryEmoji(category),
+            count: counts[category] || 0
+          }))
+        ];
+
+        categoryChips.innerHTML = chips.map((chip) => `
+          <button type="button" data-category="${escapeHtml(chip.key)}" class="category-chip" aria-pressed="${state.category === chip.key}">
+            <span aria-hidden="true">${chip.icon}</span>
+            <span>${escapeHtml(chip.label)}</span>
+            <span class="chip-count">${chip.count}</span>
+          </button>
+        `).join('');
+      }
+
+      function updateSearchClear() {
+        clearSearch.classList.toggle('hidden', searchInput.value.length === 0);
+        clearSearch.classList.toggle('grid', searchInput.value.length > 0);
+      }
+
+      function noteCardTemplate(note) {
+        const color = COLORS[note.color] || COLORS.amber;
+        const category = note.category
+          ? `<span class="note-badge">${categoryEmoji(note.category)} ${escapeHtml(note.category)}</span>`
+          : `<span class="note-badge">📝 Tanpa kategori</span>`;
+        const content = note.content
+          ? `<p class="note-content mt-2.5 text-[13.5px] leading-relaxed text-stone-600">${escapeHtml(note.content)}</p>`
+          : `<p class="mt-2.5 text-[13px] italic text-stone-600">Tidak ada isi catatan.</p>`;
+        const title = escapeHtml(note.title || 'Tanpa judul');
+
+        return `
+          <article class="note-card mb-4 break-inside-avoid overflow-hidden rounded-[1.4rem] border p-4" data-note-id="${escapeHtml(note.id)}" style="--note-bg:${color.bg};--note-border:${color.border};--note-accent:${color.accent}">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0 flex-1">${category}</div>
+              <div class="flex shrink-0 items-center gap-0.5">
+                <button type="button" data-action="edit" data-id="${escapeHtml(note.id)}" class="grid h-9 w-9 place-items-center rounded-lg bg-white/55 text-stone-600 transition hover:bg-white hover:text-amber-700" aria-label="Edit catatan ${title}" title="Edit catatan">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5V19.5a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 19.5V7.5a2.25 2.25 0 0 1 2.25-2.25H10.5" />
+                  </svg>
+                </button>
+                <button type="button" data-action="delete" data-id="${escapeHtml(note.id)}" class="grid h-9 w-9 place-items-center rounded-lg bg-white/55 text-stone-500 transition hover:bg-white hover:text-rose-600" aria-label="Hapus catatan ${title}" title="Hapus catatan">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <h3 class="note-title-clamp mt-2.5 text-[17px] font-extrabold leading-snug text-stone-800">${title}</h3>
+            ${content}
+            <div class="mt-3.5 flex items-center gap-1.5 border-t border-stone-900/[0.06] pt-2.5 text-[10.5px] font-bold text-stone-600">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <span title="${escapeHtml(formatFullDate(note.updatedAt))}">Diperbarui ${formatRelative(note.updatedAt)}</span>
+            </div>
+          </article>
+        `;
+      }
+
+      function renderNotes() {
+        const visibleNotes = getVisibleNotes();
+        const total = data.notes.length;
+        const hasFilter = state.query.length > 0 || state.category !== 'all';
+
+        sectionTitle.textContent = state.query
+          ? 'Hasil pencarian'
+          : (state.category === 'all' ? 'Semua catatan' : state.category);
+        noteCountBadge.textContent = String(visibleNotes.length);
+
+        if (state.query) {
+          noteSummary.textContent = `${visibleNotes.length} catatan cocok dengan “${state.query}”`;
+        } else if (state.category !== 'all') {
+          noteSummary.textContent = `${visibleNotes.length} catatan dalam kategori ${state.category}`;
+        } else {
+          noteSummary.textContent = total > 0
+            ? `${total} catatan tersimpan di perangkat ini`
+            : 'Belum ada catatan tersimpan';
+        }
+
+        notesGrid.innerHTML = visibleNotes.map(noteCardTemplate).join('');
+        notesGrid.classList.toggle('hidden', visibleNotes.length === 0);
+        emptyState.classList.toggle('hidden', visibleNotes.length !== 0);
+
+        if (visibleNotes.length === 0) {
+          if (total === 0) {
+            emptyTitle.textContent = 'Belum ada catatan';
+            emptyText.textContent = 'Ketuk tombol + di bawah untuk mulai menulis catatan pertamamu.';
+            emptyAction.textContent = 'Tulis catatan pertama';
+            emptyAction.dataset.mode = 'new';
+          } else {
+            emptyTitle.textContent = 'Catatan tidak ditemukan';
+            emptyText.textContent = hasFilter
+              ? 'Coba kata kunci lain atau ubah filter kategori untuk menemukan catatanmu.'
+              : 'Belum ada catatan yang bisa ditampilkan.';
+            emptyAction.textContent = 'Bersihkan filter';
+            emptyAction.dataset.mode = 'reset';
+          }
+        }
+      }
+
+      function renderAll() {
+        renderCategoryChips();
+        renderNotes();
+        updateSearchClear();
+      }
+
+      function populateCategoryOptions(selected = '') {
+        const options = [
+          '<option value="">Tanpa kategori</option>',
+          ...data.categories.map((category) => `<option value="${escapeHtml(category)}">${categoryEmoji(category)} ${escapeHtml(category)}</option>`),
+          '<option value="__add__">＋ Tambah kategori baru...</option>'
+        ];
+        noteCategory.innerHTML = options.join('');
+        noteCategory.value = data.categories.includes(selected) ? selected : '';
+        noteCategory.dataset.last = noteCategory.value;
+      }
+
+      function selectColor(color) {
+        const input = noteForm.querySelector(`input[name="noteColor"][value="${color}"]`);
+        if (input) input.checked = true;
+      }
+
+      function updateContentCount() {
+        contentCount.textContent = `${noteContent.value.length}/5000`;
+      }
+
+      function setCategoryHint(message) {
+        newCategoryHint.textContent = message || '';
+        newCategoryHint.classList.toggle('hidden', !message);
+      }
+
+      function setFormError(message) {
+        formError.textContent = message || '';
+        formError.classList.toggle('hidden', !message);
+        if (message) requestAnimationFrame(() => formError.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+      }
+
+      function openNoteEditor(note = null) {
+        const editing = Boolean(note);
+        state.editingId = editing ? note.id : null;
+
+        noteForm.reset();
+        newCategoryWrap.classList.add('hidden');
+        newCategoryInput.value = '';
+        setCategoryHint('');
+        setFormError('');
+        noteIdInput.value = editing ? note.id : '';
+        noteTitle.value = editing ? note.title : '';
+        noteContent.value = editing ? note.content : '';
+
+        const defaultCategory = state.category !== 'all'
+          ? state.category
+          : (data.categories[0] || '');
+        populateCategoryOptions(editing ? note.category : defaultCategory);
+        selectColor(editing ? note.color : 'amber');
+        updateContentCount();
+
+        formEyebrow.textContent = editing ? 'Edit catatan' : 'Catatan baru';
+        noteDialogTitle.textContent = editing ? 'Perbarui catatan' : 'Tulis catatan';
+        saveNoteBtn.textContent = editing ? 'Perbarui catatan' : 'Simpan catatan';
+
+        noteDialog.showModal();
+        document.body.classList.add('modal-open');
+        requestAnimationFrame(() => {
+          noteTitle.focus({ preventScroll: true });
+          if (editing) noteTitle.setSelectionRange(noteTitle.value.length, noteTitle.value.length);
+        });
+      }
+
+      function closeNoteEditor() {
+        if (noteDialog.open) noteDialog.close();
+      }
+
+      function openConfirm({ title, message, confirmLabel = 'Hapus', danger = true, onConfirm }) {
+        confirmTitle.textContent = title;
+        confirmMessage.textContent = message;
+        confirmAction.textContent = confirmLabel;
+        state.pendingConfirm = onConfirm;
+
+        confirmIcon.className = danger
+          ? 'grid h-12 w-12 place-items-center rounded-2xl bg-rose-100 text-rose-600'
+          : 'grid h-12 w-12 place-items-center rounded-2xl bg-amber-100 text-amber-700';
+        confirmAction.className = danger
+          ? 'h-11 flex-1 rounded-xl bg-rose-600 text-sm font-extrabold text-white shadow-sm transition hover:bg-rose-700 active:scale-95'
+          : 'h-11 flex-1 rounded-xl bg-amber-700 text-sm font-extrabold text-white shadow-sm transition hover:bg-amber-800 active:scale-95';
+
+        confirmDialog.showModal();
+        document.body.classList.add('modal-open');
+      }
+      function showToast(message, type = 'success') {
+        clearTimeout(toastTimer);
+        toastMessage.textContent = message;
+        toastBox.classList.toggle('bg-stone-900/95', type !== 'error');
+        toastBox.classList.toggle('bg-rose-600', type === 'error');
+        toast.classList.remove('opacity-0', 'translate-y-2');
+        toast.classList.add('opacity-100', 'translate-y-0');
+        toastTimer = setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          toast.classList.remove('opacity-100', 'translate-y-0');
+        }, 3200);
+      }
+
+      function syncModalState() {
+        document.body.classList.toggle('modal-open', noteDialog.open || confirmDialog.open);
+      }
+
+      function requestDelete(note) {
+        openConfirm({
+          title: 'Hapus catatan?',
+          message: `“${note.title}” akan dihapus permanen dari perangkat ini. Tindakan ini tidak bisa dibatalkan.`,
+          confirmLabel: 'Hapus',
+          danger: true,
+          onConfirm: () => {
+            const previousNotes = data.notes;
+            data.notes = data.notes.filter((item) => item.id !== note.id);
+            if (!persist()) {
+              data.notes = previousNotes;
+              return;
+            }
+            renderAll();
+            showToast('Catatan berhasil dihapus.');
+          }
+        });
+      }
+
+      function resetFilters() {
+        state.query = '';
+        state.category = 'all';
+        searchInput.value = '';
+        renderAll();
+      }
+
+      function downloadBackup() {
+        const payload = {
+          app: 'CatatanKu',
+          version: APP_VERSION,
+          exportedAt: new Date().toISOString(),
+          notes: data.notes,
+          categories: data.categories
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `catatanku-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        showToast('Backup berhasil diunduh.');
+      }
+
+      async function handleRestoreFile(file) {
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('Ukuran file backup terlalu besar (maksimal 5 MB).', 'error');
+          restoreInput.value = '';
+          return;
+        }
+
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          const restored = normalizeData(parsed);
+
+          openConfirm({
+            title: 'Pulihkan data?',
+            message: `Backup berisi ${restored.notes.length} catatan dan ${restored.categories.length} kategori. Semua data catatan yang ada saat ini akan diganti.`,
+            confirmLabel: 'Pulihkan',
+            danger: false,
+            onConfirm: () => {
+              data = restored;
+              state.category = 'all';
+              state.query = '';
+              searchInput.value = '';
+              if (!persist()) return;
+              renderAll();
+              showToast('Data berhasil dipulihkan.');
+            }
+          });
+        } catch (error) {
+          console.error('CatatanKu: gagal memulihkan backup.', error);
+          showToast('File backup tidak valid. Pilih file JSON hasil backup CatatanKu.', 'error');
+        } finally {
+          restoreInput.value = '';
+        }
+      }
+
+      function updateConnectionStatus() {
+        const online = navigator.onLine;
+        connectionDot.className = online
+          ? 'h-1.5 w-1.5 rounded-full bg-emerald-600 shadow-[0_0_0_3px_rgba(5,150,105,0.15)]'
+          : 'h-1.5 w-1.5 rounded-full bg-rose-600 shadow-[0_0_0_3px_rgba(225,29,72,0.15)]';
+        connectionLabel.textContent = online ? 'Online' : 'Offline';
+        connectionStatus.title = online
+          ? 'Terhubung ke internet'
+          : 'Sedang offline — catatan tetap tersimpan';
+        connectionStatus.setAttribute('aria-label', connectionStatus.title);
+      }
+
+      function setInstallVisible(visible) {
+        installBtn.classList.toggle('hidden', !visible);
+        installBtn.style.display = visible ? 'inline-flex' : 'none';
+      }
+      addNoteBtn.addEventListener('click', () => openNoteEditor());
+      emptyAction.addEventListener('click', () => {
+        if (emptyAction.dataset.mode === 'reset') resetFilters();
+        else openNoteEditor();
+      });
+
+      searchInput.addEventListener('input', () => {
+        state.query = searchInput.value.trim();
+        updateSearchClear();
+        renderNotes();
+      });
+      searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && searchInput.value) {
+          event.preventDefault();
+          searchInput.value = '';
+          state.query = '';
+          updateSearchClear();
+          renderNotes();
+        }
+      });
+      clearSearch.addEventListener('click', () => {
+        searchInput.value = '';
+        state.query = '';
+        updateSearchClear();
+        renderNotes();
+        searchInput.focus();
+      });
+
+      categoryChips.addEventListener('click', (event) => {
+        const chip = event.target.closest('[data-category]');
+        if (!chip) return;
+        state.category = chip.dataset.category || 'all';
+        renderAll();
+      });
+
+      notesGrid.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const note = data.notes.find((item) => item.id === button.dataset.id);
+        if (!note) {
+          showToast('Catatan tidak ditemukan. Daftar akan dimuat ulang.', 'error');
+          renderAll();
+          return;
+        }
+        if (button.dataset.action === 'edit') openNoteEditor(note);
+        if (button.dataset.action === 'delete') requestDelete(note);
+      });
+
+      noteContent.addEventListener('input', () => {
+        updateContentCount();
+        setFormError('');
+      });
+      noteTitle.addEventListener('input', () => {
+        noteTitle.setCustomValidity('');
+        setFormError('');
+      });
+
+      function hideNewCategory() {
+        newCategoryWrap.classList.add('hidden');
+        newCategoryInput.value = '';
+        setCategoryHint('');
+        noteCategory.value = noteCategory.dataset.last || '';
+      }
+
+      function addNewCategory() {
+        const clean = normalizeCategory(newCategoryInput.value);
+        if (!clean) {
+          setCategoryHint('Nama kategori tidak boleh kosong.');
+          newCategoryInput.focus();
+          return;
+        }
+
+        const existing = data.categories.find((category) => category.toLowerCase() === clean.toLowerCase());
+        if (existing) {
+          noteCategory.value = existing;
+          noteCategory.dataset.last = existing;
+          newCategoryWrap.classList.add('hidden');
+          newCategoryInput.value = '';
+          setCategoryHint('');
+          return;
+        }
+
+        if (RETIRED_CATEGORIES.includes(clean.toLowerCase())) {
+          setCategoryHint('Kategori ini sudah dihapus dan tidak bisa dipakai lagi.');
+          newCategoryInput.focus();
+          return;
+        }
+
+        data.categories.push(clean);
+        if (!persist()) {
+          data.categories.pop();
+          setCategoryHint('Kategori gagal disimpan. Coba lagi.');
+          return;
+        }
+
+        populateCategoryOptions(clean);
+        renderCategoryChips();
+        newCategoryWrap.classList.add('hidden');
+        newCategoryInput.value = '';
+        setCategoryHint('');
+      }
+
+      noteCategory.addEventListener('change', () => {
+        if (noteCategory.value === '__add__') {
+          newCategoryWrap.classList.remove('hidden');
+          newCategoryInput.value = '';
+          setCategoryHint('');
+          requestAnimationFrame(() => newCategoryInput.focus());
+          return;
+        }
+
+        newCategoryWrap.classList.add('hidden');
+        newCategoryInput.value = '';
+        setCategoryHint('');
+        noteCategory.dataset.last = noteCategory.value;
+      });
+      newCategoryInput.addEventListener('input', () => setCategoryHint(''));
+
+      saveNewCategoryBtn.addEventListener('click', addNewCategory);
+      cancelNewCategoryBtn.addEventListener('click', hideNewCategory);
+      newCategoryInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          addNewCategory();
+        }
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          hideNewCategory();
+        }
+      });
+
+      noteForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const title = noteTitle.value.trim();
+        if (!title) {
+          noteTitle.setCustomValidity('Judul catatan wajib diisi.');
+          noteTitle.reportValidity();
+          noteTitle.setCustomValidity('');
+          return;
+        }
+        noteTitle.setCustomValidity('');
+
+        if (noteCategory.value === '__add__') {
+          if (!newCategoryInput.value.trim()) {
+            setCategoryHint('Isi nama kategori baru atau pilih kategori lain.');
+            newCategoryInput.focus();
+            return;
+          }
+          addNewCategory();
+          if (noteCategory.value === '__add__') return;
+        }
+
+        let category = noteCategory.value;
+        if (!data.categories.includes(category)) category = '';
+
+        const selectedColor = noteForm.querySelector('input[name="noteColor"]:checked');
+        const color = selectedColor && COLORS[selectedColor.value] ? selectedColor.value : 'amber';
+        const content = noteContent.value.trim();
+        const now = new Date().toISOString();
+
+        if (state.editingId) {
+          const note = data.notes.find((item) => item.id === state.editingId);
+          if (!note) {
+            showToast('Catatan tidak ditemukan.', 'error');
+            closeNoteEditor();
+            renderAll();
+            return;
+          }
+          const previous = { ...note };
+          Object.assign(note, { title, content, category, color, updatedAt: now });
+          if (!persist()) {
+            Object.assign(note, previous);
+            setFormError('Catatan gagal disimpan. Penyimpanan perangkat mungkin penuh.');
+            return;
+          }
+          closeNoteEditor();
+          renderAll();
+          showToast('Catatan berhasil diperbarui.');
+          return;
+        }
+
+        data.notes.push({
+          id: generateId(),
+          title,
+          content,
+          category,
+          color,
+          createdAt: now,
+          updatedAt: now
+        });
+        if (!persist()) {
+          data.notes.pop();
+          setFormError('Catatan gagal disimpan. Penyimpanan perangkat mungkin penuh.');
+          return;
+        }
+        closeNoteEditor();
+        renderAll();
+        showToast('Catatan baru berhasil disimpan.');
+      });
+
+      closeNoteDialog.addEventListener('click', closeNoteEditor);
+      cancelNoteBtn.addEventListener('click', closeNoteEditor);
+      noteDialog.addEventListener('click', (event) => {
+        if (event.target === noteDialog) closeNoteEditor();
+      });
+      noteDialog.addEventListener('close', () => {
+        state.editingId = null;
+        syncModalState();
+      });
+
+      confirmCancel.addEventListener('click', () => confirmDialog.close());
+      confirmAction.addEventListener('click', () => {
+        const callback = state.pendingConfirm;
+        state.pendingConfirm = null;
+        confirmDialog.close();
+        if (typeof callback === 'function') callback();
+      });
+      confirmDialog.addEventListener('click', (event) => {
+        if (event.target === confirmDialog) confirmDialog.close();
+      });
+      confirmDialog.addEventListener('close', () => {
+        state.pendingConfirm = null;
+        syncModalState();
+      });
+
+      backupBtn.addEventListener('click', downloadBackup);
+      restoreBtn.addEventListener('click', () => restoreInput.click());
+      restoreInput.addEventListener('change', () => {
+        const file = restoreInput.files && restoreInput.files[0];
+        if (file) handleRestoreFile(file);
+      });
+
+      installBtn.addEventListener('click', async () => {
+        if (!deferredInstallPrompt) {
+          showToast('Gunakan menu browser lalu pilih “Tambahkan ke layar utama”.');
+          return;
+        }
+        deferredInstallPrompt.prompt();
+        try {
+          const choice = await deferredInstallPrompt.userChoice;
+          if (choice.outcome === 'accepted') showToast('CatatanKu siap dipasang di layar utama.');
+        } finally {
+          deferredInstallPrompt = null;
+          setInstallVisible(false);
+        }
+      });
+
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (!standalone) setInstallVisible(true);
+      });
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        setInstallVisible(false);
+        showToast('CatatanKu berhasil dipasang.');
+      });
+
+      window.addEventListener('online', () => {
+        updateConnectionStatus();
+        showToast('Kembali online. Catatan tetap tersimpan.');
+      });
+      window.addEventListener('offline', () => {
+        updateConnectionStatus();
+        showToast('Mode offline aktif. Catatan tetap bisa dibuat dan disimpan.');
+      });
+
+      document.addEventListener('keydown', (event) => {
+        const target = event.target;
+        const isTyping = target instanceof HTMLElement && (
+          target.matches('input, textarea, select') || target.isContentEditable
+        );
+        if (isTyping || noteDialog.open || confirmDialog.open) return;
+
+        if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          event.preventDefault();
+          searchInput.focus();
+        }
+        if ((event.key === 'n' || event.key === 'N') && !event.ctrlKey && !event.metaKey && !event.altKey) {
+          event.preventDefault();
+          openNoteEditor();
+        }
+      });
+
+      if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./service-worker.js').catch((error) => {
+            console.warn('CatatanKu: service worker gagal didaftarkan.', error);
+          });
+        });
+      }
+
+      updateConnectionStatus();
+      renderAll();
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('action') === 'new') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('action');
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+        window.setTimeout(() => openNoteEditor(), 350);
+      }
+
+
+
+    })();
+  </script>
+</body>
+</html>
